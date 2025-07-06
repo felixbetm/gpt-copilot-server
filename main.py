@@ -11,15 +11,19 @@ def home():
 def copilot():
     data = request.get_json()
     prompt = data.get("prompt", "")
-    
+
     if not prompt:
         return jsonify({"error": "No prompt provided"}), 400
 
-    # Deine GPT-Webhook-URL
+    # GPT Webhook mit Token im Header
     gpt_webhook = "https://script.google.com/macros/s/AKfycbwDUsN-KIr5e0cbFi-JX18ajzMr9TrrJwUppypBc8Wxh5fiuzue4cQA0xPulVg6Ub8q/exec"
-    
+    headers = {
+        "Authorization": "Bearer 8235",  # ← Token mitschicken
+        "Content-Type": "application/json"
+    }
+
     try:
-        gpt_response = requests.post(gpt_webhook, json={"prompt": prompt})
+        gpt_response = requests.post(gpt_webhook, json={"prompt": prompt}, headers=headers)
         response_json = gpt_response.json()
     except Exception as e:
         return jsonify({"error": "Error contacting GPT service", "details": str(e)}), 502
