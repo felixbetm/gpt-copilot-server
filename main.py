@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 import requests
+import json  # <- wichtig für das Parsen von Strings zu JSON
 
 app = Flask(__name__)
 
@@ -18,18 +19,23 @@ def copilot():
     if not prompt:
         return jsonify({"error": "No prompt provided"}), 400
 
-    # Token wird direkt in die URL als Parameter eingebaut
-    token = "8235"
-    gpt_webhook = f"https://script.google.com/macros/s/AKfycbyRQ5gUisrZJKdJNoN_PixPrRIFJK0iTVBCoOOVVFkIMVcsyLzwWhg3Ch6dH4PdJt9n/exec?token={token}"
+    try:
+        # ↓↓↓ NEU: Den Prompt-String in ein echtes JSON-Objekt umwandeln
+        payload = json.loads(prompt)
+    except Exception as e:
+        return jsonify({"error": "Invalid JSON in prompt", "details": str(e)}), 400
+
+    gpt_webhook = "https://script.google.com/macros/s/AKfycbyRQ5gUisrZJKdJNoN_PixPrRIFJK0iTVBCoOOVVFkIMVcsyLzwWhg3Ch6dH4PdJt9n/exec"
+    headers = {
+        "Authorization": "Bearer 8235",
+        "Content-Type": "application/json"
+    }
 
     try:
-        gpt_response = requests.post(gpt_webhook, json={"prompt": prompt})
+        gpt_response = requests.post(gpt_webhook, json=payload, headers=headers)
         response_json = gpt_response.json()
     except Exception as e:
-        return jsonify({
-            "error": "Error contacting GPT service",
-            "details": str(e)
-        }), 502
+        return jsonify({"error": "Error contacting GPT service", "details": str(e)}), 502
 
     return jsonify({"response": response_json})
 
