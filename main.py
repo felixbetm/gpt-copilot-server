@@ -16,7 +16,7 @@ def copilot():
         return jsonify({"error": "No prompt provided"}), 400
 
     # GPT Webhook mit Token im Header
-    gpt_webhook = "https://script.google.com/macros/s/AKfycbwDUsN-KIr5e0cbFi-JX18ajzMr9TrrJwUppypBc8Wxh5fiuzue4cQA0xPulVg6Ub8q/exec"
+    gpt_webhook = "https://script.google.com/macros/s/AKfycbyRQ5gUisrZJKdJNoN_PixPrRIFJK0iTVBCoOOVVFkIMVcsyLzwWhg3Ch6dH4PdJt9n/exec"
     headers = {
         "Authorization": "Bearer 8235",  # ← Token mitschicken
         "Content-Type": "application/json"
