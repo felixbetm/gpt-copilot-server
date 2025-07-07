@@ -1,70 +1,49 @@
+import requests
 from flask import Flask, request, jsonify
-import requests, os, json
 
-# --- Konfiguration -----------------------------------------------------------
-SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbx9Etr5D74F8R8YVL4xbc-zqzPm4ka6F08l_nKg1RHvCUAVYcWaaCo3I2Nab4bjmw8P/exec"
-SECRET_TOKEN  = "8235"           # ggf. via os.getenv("SECRET_TOKEN")
+APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby9KvlENfvkOndVAfcQrOdKtIwt_AlO8EzjQRdKLL5ZZjxqUL6rMg6nzxtHE2oAhnfO/exec"
+TOKEN          = "8235"
 
 app = Flask(__name__)
 
-# --- Health-Check ------------------------------------------------------------
 @app.route("/", methods=["GET"])
 def home():
-    return jsonify({"status": "ok", "message": "Copilot-Server läuft."})
+    return jsonify({"message": "Copilot-Server läuft.", "status": "ok"})
 
-# --- Generische Write-Route --------------------------------------------------
-@app.route("/write", methods=["POST"])
-def write():
-    """
-    Erwartet JSON-Body:
-    {
-      "sheet":  "<Tabellenblatt-Name>",
-      "range":  "<A1-Range>",
-      "values": [[..],[..]]
-    }
-    """
-    data = request.get_json(force=True, silent=True)
-    if not data:
-        return jsonify({"error": "invalid json"}), 400
+@app.route("/sheet/write", methods=["POST"])
+def write_sheet():
+    data   = request.get_json(force=True)
+    sheet  = data.get("sheet")
+    rng    = data.get("range")
+    values = data.get("values")
+
+    if not (sheet and rng and values):
+        return jsonify({"error": "sheet, range, values sind Pflicht"}), 400
 
     payload = {
-        "token":  SECRET_TOKEN,
-        "sheet":  data.get("sheet"),
-        "range":  data.get("range"),
-        "values": data.get("values")
+        "token": TOKEN,
+        "sheet": sheet,
+        "range": rng,
+        "values": values
     }
+    # Weiterleitungen zulassen (Apps-Script 302)
+    r = requests.post(APP_SCRIPT_URL, json=payload, allow_redirects=True, timeout=15)
+    return jsonify(r.json()), r.status_code
 
-    try:
-        r = requests.post(SCRIPT_URL, json=payload, timeout=10)
-        return jsonify(r.json()), r.status_code
-    except requests.exceptions.RequestException as err:
-        return jsonify({"error": "Apps Script nicht erreichbar", "details": str(err)}), 502
+@app.route("/sheet/read", methods=["GET"])
+def read_sheet():
+    sheet = request.args.get("sheet")
+    rng   = request.args.get("range")
+    if not (sheet and rng):
+        return jsonify({"error": "sheet und range sind Pflicht"}), 400
 
-# --- Beispiel-Route BTC-Tabelle ---------------------------------------------
-@app.route("/btc-demo", methods=["POST"])
-def btc_demo():
-    startwert = 40000
-    werte = [["Monat", "BTC-Preis (+15 % p.a.)"]]
-
-    for m in range(1, 13):
-        faktor = (1 + 0.15) ** (m / 12)
-        preis  = round(startwert * faktor, 2)
-        werte.append([f"Monat {m}", preis])
-
-    payload = {
-        "token":  SECRET_TOKEN,
-        "sheet":  "api-test",
-        "range":  "A1:B13",
-        "values": werte
+    params = {
+        "token": TOKEN,
+        "sheet": sheet,
+        "range": rng
     }
-    try:
-        r = requests.post(SCRIPT_URL, json=payload, timeout=10)
-        return jsonify(r.json()), r.status_code
-    except requests.exceptions.RequestException as err:
-        return jsonify({"error": "Apps Script nicht erreichbar", "details": str(err)}), 502
-
+    r = requests.get(APP_SCRIPT_URL, params=params, allow_redirects=True, timeout=15)
+    return jsonify(r.json()), r.status_code
 
 if __name__ == "__main__":
-    # Render setzt PORT env-Var; fallback 10000
-    port = int(os.getenv("PORT", "10000"))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=10000)
