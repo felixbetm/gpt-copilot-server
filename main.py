@@ -26,16 +26,14 @@ def copilot():
     # Google Script Webhook
     gpt_webhook = "https://script.google.com/macros/s/AKfycbyRQ5gUisrZJKdJNoN_PixPrRIFJK0iTVBCoOOVVFkIMVcsyLzwWhg3Ch6dH4PdJt9n/exec"
     headers = {
-    "Content-Type": "application/json"
-}
-
-gpt_response = requests.post(gpt_webhook, json={"prompt": prompt, "token": "8235"}, headers=headers)
-
+        "Content-Type": "application/json"
+    }
 
     payload = {
         "sheet": sheet_name,
         "range": range_str,
-        "values": values
+        "values": values,
+        "token": "8235"
     }
 
     try:
