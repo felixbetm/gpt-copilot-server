@@ -3,7 +3,6 @@ import requests
 
 app = Flask(__name__)
 
-# Startseite zum Testen, ob Server läuft
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({
@@ -11,7 +10,6 @@ def home():
         "status": "ok"
     })
 
-# API-Endpunkt für /copilot
 @app.route("/copilot", methods=["POST"])
 def copilot():
     data = request.get_json()
@@ -20,15 +18,12 @@ def copilot():
     if not prompt:
         return jsonify({"error": "No prompt provided"}), 400
 
-    # Aktuelle Google Script URL + Token im Header
-    gpt_webhook = "https://script.google.com/macros/s/AKfycbyRQ5gUisrZJKdJNoN_PixPrRIFJK0iTVBCoOOVVFkIMVcsyLzwWhg3Ch6dH4PdJt9n/exec"
-    headers = {
-        "Authorization": "Bearer 8235",
-        "Content-Type": "application/json"
-    }
+    # Token wird direkt in die URL als Parameter eingebaut
+    token = "8235"
+    gpt_webhook = f"https://script.google.com/macros/s/AKfycbyRQ5gUisrZJKdJNoN_PixPrRIFJK0iTVBCoOOVVFkIMVcsyLzwWhg3Ch6dH4PdJt9n/exec?token={token}"
 
     try:
-        gpt_response = requests.post(gpt_webhook, json={"prompt": prompt}, headers=headers)
+        gpt_response = requests.post(gpt_webhook, json={"prompt": prompt})
         response_json = gpt_response.json()
     except Exception as e:
         return jsonify({
@@ -38,6 +33,5 @@ def copilot():
 
     return jsonify({"response": response_json})
 
-# Start der App auf Port 10000 (für Render)
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
